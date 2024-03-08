@@ -1,13 +1,14 @@
 package br.com.webcrawler
 
-import org.jsoup.Jsoup
+import groovyx.net.http.HttpBuilder
+import groovyx.net.http.optional.Download
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
 class WebCrawler {
 
     private Document getPage(String url) throws IOException {
-        return Jsoup.connect(url).get()
+        return (Document) HttpBuilder.configure { request.uri = url }.get()
     }
 
     String urlPaginaTISS() {
@@ -18,10 +19,30 @@ class WebCrawler {
 
         Document pagina2 = getPage(url1)
         Element conteudo2 = pagina2.getElementsByClass("govbr-card-content").first()
-        String url2 = conteudo2.getElementsByTag("a").attr("href")
+        return conteudo2.getElementsByTag("a").attr("href")
+    }
 
-        Document pagina3 = getPage(url2)
-        Element conteudo3 = pagina3.getElementsByClass("callout").first()
-        return conteudo3.getElementsByTag("a").attr("href")
+    void getTabelaArquivosPadraoTISS() {
+
+        Document pagina = getPage(urlPaginaTISS())
+        Element conteudo = pagina.getElementsByClass("internal-link").get(0)
+        String url = conteudo.getElementsByTag("a").attr("href")
+
+        Document pagina2 = getPage(url)
+        Element tabela = pagina2.getElementsByTag("tbody").first().getElementsByTag("tr").last()
+        url = tabela.lastElementChild().firstElementChild().attr("href")
+
+        baixarAndSalvarNaPastaDownloads(url, "componente_de_comunicao_TISS.zip")
+    }
+
+    private void baixarAndSalvarNaPastaDownloads(String url, String nomeArquivo) {
+
+        File diretorio = new File("./Downloads")
+        diretorio.mkdirs()
+        File path = new File(diretorio, nomeArquivo)
+
+        HttpBuilder.configure {
+            request.uri = url
+        }.get { Download.toFile(delegate, path)}
     }
 }

@@ -5,5 +5,6 @@ class Main {
         WebCrawler webCrawler = new WebCrawler()
         webCrawler.getTabelaArquivosPadraoTISS()
         webCrawler.getHistoricoVersoesComponentesTISS()
+        webCrawler.getTabelaErrosANS()
     }
 }

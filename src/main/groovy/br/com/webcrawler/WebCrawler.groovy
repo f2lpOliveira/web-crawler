@@ -71,6 +71,23 @@ class WebCrawler {
         }
     }
 
+    void getTabelaErrosANS() {
+        try {
+            Document pagina = Jsoup.connect(urlPaginaTISS()).get()
+            Element conteudo = pagina.select("#parent-fieldname-text > .callout").get(2)
+            String url = conteudo.select("a").attr("href")
+
+            Document pagina2 = getPage(url)
+            Element conteudo2 = pagina2.select("#parent-fieldname-text").get(0)
+            url = conteudo2.select("a").attr("href")
+
+            baixarAndSalvarNaPastaDownloads(url, "tabela_de_erros_no_envio_para_a_ANS.xlsx")
+
+        } catch (Exception e) {
+            println("Erro ao coletar informações: ${e.getMessage()}")
+        }
+    }
+
     void criaArquivoTXTnaPastaDownloads(List<List<String>> informacoes, String caminhoArquivo) {
         try {
             File arquivo = new File(caminhoArquivo)

@@ -2,8 +2,10 @@ package br.com.webcrawler
 
 import groovyx.net.http.HttpBuilder
 import groovyx.net.http.optional.Download
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.select.Elements
 
 class WebCrawler {
 
@@ -13,8 +15,8 @@ class WebCrawler {
 
     String urlPaginaTISS() {
 
-        Document pagina1 = getPage("https://www.gov.br/ans/pt-br")
-        Element conteudo1 = pagina1.getElementById("ce89116a-3e62-47ac-9325-ebec8ea95473")
+        Document pagina = getPage("https://www.gov.br/ans/pt-br")
+        Element conteudo1 = pagina.getElementById("ce89116a-3e62-47ac-9325-ebec8ea95473")
         String url1 = conteudo1.getElementsByTag("a").attr("href")
 
         Document pagina2 = getPage(url1)
@@ -34,6 +36,59 @@ class WebCrawler {
 
         baixarAndSalvarNaPastaDownloads(url, "componente_de_comunicao_TISS.zip")
     }
+
+    void getHistoricoVersoesComponentesTISS() {
+        try {
+            Document pagina = Jsoup.connect(urlPaginaTISS()).get()
+            Element conteudo = pagina.select(".external-link").get(0)
+            String url = conteudo.select("a").attr("href")
+
+            Document pagina1 = Jsoup.connect(url).get()
+            Elements conteudo1 = pagina1.select("tbody")
+            Elements listaTr = conteudo1.select("tr")
+
+            List<List<String>> informacoes = []
+
+            informacoes.add(["Competência", "Publicação", "Início de Vigência"])
+
+            listaTr.each { tr ->
+                Elements listaTd = tr.select("td")
+                String competencia = listaTd.get(0).text()
+
+                List<String> competenciaSplit = competencia.split("/")
+                Integer ano = Integer.parseInt(competenciaSplit[1])
+
+                if (ano >= 2016) {
+                    String publicacao = listaTd.get(1).text()
+                    String inicioVigencia = listaTd.get(2).text()
+                    informacoes.add([competencia, publicacao, inicioVigencia])
+                }
+            }
+
+            criaArquivoTXTnaPastaDownloads(informacoes, "./Downloads/historico_versoes_de_componentes_TISS.txt")
+        } catch (Exception e) {
+            println("Erro ao coletar informações: ${e.getMessage()}")
+        }
+    }
+
+    void criaArquivoTXTnaPastaDownloads(List<List<String>> informacoes, String caminhoArquivo) {
+        try {
+            File arquivo = new File(caminhoArquivo)
+            if (arquivo.exists()) {
+                arquivo.delete()
+            }
+            arquivo.createNewFile()
+            arquivo.withWriter { writer ->
+                informacoes.each { info ->
+                    writer.writeLine(info.join(", "))
+                }
+            }
+            println("Arquivo salvo em ${caminhoArquivo}")
+        } catch (Exception e) {
+            println("Erro ao criar arquivo: ${e.getMessage()}")
+        }
+    }
+
 
     private void baixarAndSalvarNaPastaDownloads(String url, String nomeArquivo) {
 
